@@ -65,3 +65,7 @@ npm install
 
 # Run the development server
 npm run dev
+
+## Community route submissions
+
+The curated transit network remains the source for search, detailed route information, and seat requests. Community submissions are stored in Supabase and shown as dashed connections on the same map. Copy `.env.example` to `.env.local`, set `SUPABASE_URL` and `SUPABASE_ANON_KEY`, then run `supabase/schema.sql` in the Supabase SQL editor. The route API geocodes place names with OpenStreetMap Nominatim. A submission that cannot be located is still saved but is not drawn on the map.

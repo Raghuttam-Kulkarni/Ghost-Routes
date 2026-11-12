@@ -7,6 +7,7 @@ import { useTheme } from 'next-themes'
 import { useRouter } from 'next/navigation'
 import { MapContainer, TileLayer, useMap } from 'react-leaflet'
 import { AlertSheet } from '@/components/alert-sheet'
+import { CommunityRoutes } from '@/components/community-routes'
 import { BookingSheet } from '@/components/booking-sheet'
 import { PickupLayer } from '@/components/pickup-layer'
 import { ReviewSheet } from '@/components/review-sheet'
@@ -483,6 +484,7 @@ export default function GhostMap({ routes, signedIn }: { routes: GhostRoute[]; s
           attribution={ATTRIBUTION}
           maxZoom={16}
         />
+        <CommunityRoutes />
         <RouteLayer
           routes={visibleRoutes}
           selectedRouteId={selectedRouteId}

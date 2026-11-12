@@ -1,108 +1,113 @@
-import { NextResponse } from 'next/server';
-import { geocodePlace } from '@/lib/geocode';
-import { getSupabase, isSupabaseConfigured } from '@/lib/supabase';
-import type { Route } from '@/lib/types';
+import { NextResponse } from "next/server";
+import { isSupabaseConfigured, listRoutes, saveRoute } from "@/lib/routeStore";
 
-export const dynamic = 'force-dynamic';
+/** Supabase is reached over fetch; keep this on Node so env vars are readable. */
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
-const TABLE = 'routes';
-const MAX_PLACE_LENGTH = 120;
-const MAX_DESCRIPTION_LENGTH = 600;
+const MAX_ROUTE_NAME_LENGTH = 200;
+const MAX_STOPS = 200;
+const MAX_PATH_POINTS = 2000;
 
-const CONFIG_ERROR =
-  'Supabase is not configured. Add SUPABASE_URL and SUPABASE_ANON_KEY to .env.local (or the hosting secrets).';
-
-function errorMessage(error: unknown): string {
-  return error instanceof Error ? error.message : 'Unexpected server error.';
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
+function text(value: unknown, fallback: string): string {
+  return typeof value === "string" && value.trim() ? value.trim() : fallback;
+}
+
+function parseStops(value: unknown): { name: string; lat: number; lng: number }[] {
+  if (!Array.isArray(value)) return [];
+  return value.slice(0, MAX_STOPS).flatMap((entry) => {
+    if (!isRecord(entry)) return [];
+    const name = typeof entry.name === "string" ? entry.name.trim() : "";
+    const lat = Number(entry.lat);
+    const lng = Number(entry.lng);
+    if (!name || !Number.isFinite(lat) || !Number.isFinite(lng)) return [];
+    if (Math.abs(lat) > 90 || Math.abs(lng) > 180) return [];
+    return [{ name, lat, lng }];
+  });
+}
+
+function parsePath(value: unknown): [number, number][] {
+  if (!Array.isArray(value)) return [];
+  return value.slice(0, MAX_PATH_POINTS).flatMap((entry) => {
+    if (!Array.isArray(entry) || entry.length < 2) return [];
+    const lat = Number(entry[0]);
+    const lng = Number(entry[1]);
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) return [];
+    if (Math.abs(lat) > 90 || Math.abs(lng) > 180) return [];
+    return [[lat, lng] as [number, number]];
+  });
+}
+
+/** GET /api/routes — saved routes for the LOGGED ROUTES layer. */
 export async function GET() {
-  if (!isSupabaseConfigured()) {
-    return NextResponse.json({ error: CONFIG_ERROR }, { status: 503 });
-  }
-
-  try {
-    const { data, error } = await getSupabase()
-      .from(TABLE)
-      .select('*')
-      .order('created_at', { ascending: false });
-
-    if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
-    }
-
-    return NextResponse.json({ routes: (data ?? []) as Route[] }, { headers: { 'Cache-Control': 'no-store' } });
-  } catch (error) {
-    return NextResponse.json({ error: errorMessage(error) }, { status: 500 });
-  }
+  const { routes, source } = await listRoutes();
+  return NextResponse.json(
+    { routes, count: routes.length, source, supabaseConfigured: isSupabaseConfigured() },
+    { status: 200 },
+  );
 }
 
+/** POST /api/routes — persists a normalized route, in Supabase when configured. */
 export async function POST(request: Request) {
-  if (!isSupabaseConfigured()) {
-    return NextResponse.json({ error: CONFIG_ERROR }, { status: 503 });
-  }
-
-  let payload: unknown;
+  let body: unknown;
   try {
-    payload = await request.json();
+    body = await request.json();
   } catch {
-    return NextResponse.json({ error: 'Request body must be valid JSON.' }, { status: 400 });
-  }
-
-  const body = (payload ?? {}) as Record<string, unknown>;
-  const origin = typeof body.origin === 'string' ? body.origin.trim() : '';
-  const destination = typeof body.destination === 'string' ? body.destination.trim() : '';
-  const description = typeof body.description === 'string' ? body.description.trim() : '';
-
-  if (!origin || !destination) {
-    return NextResponse.json({ error: 'Origin and destination are both required.' }, { status: 400 });
-  }
-
-  if (origin.length > MAX_PLACE_LENGTH || destination.length > MAX_PLACE_LENGTH) {
     return NextResponse.json(
-      { error: `Origin and destination must be ${MAX_PLACE_LENGTH} characters or fewer.` },
+      { error: "Request body must be valid JSON", detail: 'Expected a route object with routeName and stops.' },
       { status: 400 },
     );
   }
 
-  if (description.length > MAX_DESCRIPTION_LENGTH) {
+  if (!isRecord(body)) {
+    return NextResponse.json({ error: "Request body must be a route object" }, { status: 400 });
+  }
+
+  const routeName = text(body.routeName, "");
+  if (!routeName) {
+    return NextResponse.json({ error: "routeName is required" }, { status: 400 });
+  }
+  if (routeName.length > MAX_ROUTE_NAME_LENGTH) {
     return NextResponse.json(
-      { error: `Description must be ${MAX_DESCRIPTION_LENGTH} characters or fewer.` },
+      { error: "routeName is too long", detail: `Limit is ${MAX_ROUTE_NAME_LENGTH} characters.` },
       { status: 400 },
     );
   }
 
-  try {
-    // Sequential on purpose: the geocoder enforces a one-request-per-second limit.
-    const originPoint = await geocodePlace(origin);
-    const destinationPoint = await geocodePlace(destination);
-
-    const { data, error } = await getSupabase()
-      .from(TABLE)
-      .insert({
-        origin,
-        destination,
-        description: description || null,
-        origin_lat: originPoint?.lat ?? null,
-        origin_lng: originPoint?.lng ?? null,
-        dest_lat: destinationPoint?.lat ?? null,
-        dest_lng: destinationPoint?.lng ?? null,
-      })
-      .select('*')
-      .single();
-
-    if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
-    }
-
+  const stops = parseStops(body.stops);
+  const pathCoordinates = parsePath(body.pathCoordinates);
+  if (stops.length < 2 && pathCoordinates.length < 2) {
     return NextResponse.json(
-      {
-        route: data as Route,
-        located: Boolean(originPoint && destinationPoint),
-      },
-      { status: 201, headers: { 'Cache-Control': 'no-store' } },
+      { error: "A route needs at least two stops or two path points" },
+      { status: 400 },
     );
-  } catch (error) {
-    return NextResponse.json({ error: errorMessage(error) }, { status: 500 });
   }
+
+  const { route, persisted, warning } = await saveRoute({
+    routeName,
+    vehicleType: text(body.vehicleType, "Shared Auto"),
+    estimatedFare: text(body.estimatedFare, "Unknown"),
+    frequency: text(body.frequency, "Unknown"),
+    stops,
+    pathCoordinates: pathCoordinates.length >= 2 ? pathCoordinates : stops.map((stop) => [stop.lat, stop.lng]),
+  });
+
+  return NextResponse.json(
+    {
+      route,
+      persisted,
+      source: persisted ? "supabase" : "demo",
+      // Never a silent failure: the caller can show exactly where it went.
+      message: persisted
+        ? "Saved to Supabase."
+        : warning
+          ? `Supabase write failed (${warning}); the route is kept in memory for this session.`
+          : "Supabase is not configured; the route is kept in memory for this session.",
+    },
+    { status: persisted ? 201 : 200 },
+  );
 }

@@ -26,7 +26,7 @@ export default function Home() {
         <p className="text-[11px] tracking-[0.35em] text-cyan-400/70 uppercase">Ghost Routes</p>
         <h1 className="text-2xl font-semibold text-cyan-50 sm:text-3xl">AI + Maps module</h1>
         <p className="max-w-2xl text-sm text-slate-400">
-          Type a route the way people actually describe it — or paste messy GPS coordinates — and Gemini
+          Type a route the way people actually describe it — or paste chaotic GPS coordinates — and Gemini
           normalizes it into a clean stop list and road-following polyline. The map opens on a preloaded
           Bengaluru route, and the LOGGED ROUTES, RAW GPS and CLEANED layers switch on and off independently.
         </p>

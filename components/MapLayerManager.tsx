@@ -267,7 +267,14 @@ export default function MapLayerManager({
     }
 
     // 2. Stop markers with their own card, highlighting the clicked stop.
+    // A route can repeat a coordinate (Gemini occasionally emits the same stop
+    // twice); one pin per spot keeps the top pin clickable.
+    const drawnStopSpots = new Set<string>();
     (route?.stops ?? []).forEach((stop, index) => {
+      const spot = `${stop.lat.toFixed(5)},${stop.lng.toFixed(5)}`;
+      if (drawnStopSpots.has(spot)) return;
+      drawnStopSpots.add(spot);
+
       const marker = L.marker([stop.lat, stop.lng], {
         icon: createStopIcon(ROUTE_COLOR),
         title: stop.name,
@@ -425,8 +432,12 @@ export default function MapLayerManager({
           font-family: inherit;
           outline: none;
         }
+        /* OpenStreetMap publishes light tiles only: inverting the tile pane is
+           what makes it a dark basemap, no API key and no second provider.
+           Route lines, pins and popups sit in other panes, so they keep their
+           real colours. */
         .mlm-container .leaflet-tile-pane {
-          filter: saturate(0.35) brightness(0.72) contrast(1.05);
+          filter: invert(100%) hue-rotate(180deg) brightness(95%) contrast(90%);
         }
         .mlm-container .leaflet-bar,
         .mlm-container .leaflet-bar a {

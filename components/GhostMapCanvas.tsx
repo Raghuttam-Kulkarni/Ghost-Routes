@@ -194,7 +194,18 @@ export default function GhostMapCanvas({
 
     group.clearLayers();
     routes.forEach((route) => addGlowingRoute(group, route));
-    stops.forEach((stop) => addStopMarker(group, stop));
+
+    // Stop labels are permanent tooltips, so two stops at the same coordinate
+    // (or one stop repeated by the AI) stack their pins and names, leaving the
+    // lower one impossible to read or click. One marker per ~1 m keeps every
+    // label legible.
+    const drawnStops = new Set<string>();
+    stops.forEach((stop) => {
+      const spot = `${stop.latitude.toFixed(5)},${stop.longitude.toFixed(5)}`;
+      if (drawnStops.has(spot)) return;
+      drawnStops.add(spot);
+      addStopMarker(group, stop);
+    });
 
     // Optionally frame the freshly rendered content (e.g. an AI-normalized route).
     if (fitToContent) {
@@ -220,8 +231,12 @@ export default function GhostMapCanvas({
           font-family: inherit;
           outline: none;
         }
+        /* OpenStreetMap publishes light tiles only: inverting the tile pane is
+           what makes it a dark basemap, no API key and no second provider.
+           Markers, popups and tooltips sit in other panes, so they keep their
+           real colours. */
         .ghost-map-container .leaflet-tile-pane {
-          filter: saturate(0.35) brightness(0.72) contrast(1.05);
+          filter: invert(100%) hue-rotate(180deg) brightness(95%) contrast(90%);
         }
         .ghost-map-container .leaflet-bar,
         .ghost-map-container .leaflet-bar a {

@@ -1,37 +1,38 @@
-import RouteExplorer from '@/components/RouteExplorer';
+"use client";
 
-export default function HomePage() {
+import dynamic from "next/dynamic";
+
+/**
+ * Leaflet touches `window`/`document` at import time, so the entire interactive
+ * studio — map canvas, Leaflet CSS, marker icons and plugins — is loaded on the
+ * client only. `ssr: false` keeps those modules out of server rendering and out
+ * of the prerendered HTML; only the placeholder below is produced on the server.
+ */
+const RouteAIStudio = dynamic(() => import("@/components/RouteAIStudio"), {
+  ssr: false,
+  loading: () => (
+    <div className="flex min-h-[60vh] flex-1 items-center justify-center rounded-2xl border border-cyan-500/20 bg-[#050b14]">
+      <span className="animate-pulse text-xs tracking-[0.3em] text-cyan-300/80 uppercase">
+        Loading ghost routes…
+      </span>
+    </div>
+  ),
+});
+
+export default function Home() {
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-[1500px] flex-col gap-6 px-4 py-8 sm:px-6 lg:px-8">
-      <header className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <p className="mb-2 flex items-center gap-2 text-[11px] font-medium uppercase tracking-[0.28em] text-ghost-spirit/80">
-            <span className="inline-block h-1.5 w-1.5 rounded-full bg-ghost-spirit shadow-[0_0_12px_rgba(94,234,212,0.9)]" />
-            Field notes from the in-between
-          </p>
-          <h1 className="text-4xl font-semibold tracking-tight text-white sm:text-5xl">
-            Ghost<span className="text-ghost-haze">-</span>Routes
-          </h1>
-          <p className="mt-2 max-w-2xl text-sm leading-relaxed text-slate-400">
-            Name an origin and a destination, add what happened on the way, and the route is drawn on
-            the map for everyone who comes after.
-          </p>
-        </div>
-        <div className="hidden items-center gap-5 rounded-xl border border-white/10 bg-ghost-panel/70 px-4 py-3 text-[11px] uppercase tracking-[0.16em] text-slate-400 sm:flex">
-          <span className="flex items-center gap-2">
-            <span className="h-2 w-2 rounded-full bg-ghost-spirit" /> Origin
-          </span>
-          <span className="flex items-center gap-2">
-            <span className="h-2 w-2 rounded-full bg-ghost-haze" /> Destination
-          </span>
-        </div>
+    <main className="mx-auto flex min-h-dvh w-full max-w-7xl flex-col gap-5 p-4 sm:p-6 lg:p-8">
+      <header className="flex flex-col gap-1">
+        <p className="text-[11px] tracking-[0.35em] text-cyan-400/70 uppercase">Ghost Routes</p>
+        <h1 className="text-2xl font-semibold text-cyan-50 sm:text-3xl">AI + Maps module</h1>
+        <p className="max-w-2xl text-sm text-slate-400">
+          Type a route the way people actually describe it — or paste messy GPS coordinates — and Gemini
+          normalizes it into a clean stop list and road-following polyline. The map opens on a preloaded
+          Bengaluru route, and the LOGGED ROUTES, RAW GPS and CLEANED layers switch on and off independently.
+        </p>
       </header>
 
-      <RouteExplorer />
-
-      <footer className="pb-2 text-[11px] text-slate-600">
-        Tiles by CARTO · geocoding by OpenStreetMap Nominatim · data stored in Supabase
-      </footer>
+      <RouteAIStudio />
     </main>
   );
 }

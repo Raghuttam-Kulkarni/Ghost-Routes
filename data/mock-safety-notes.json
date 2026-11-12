@@ -1,0 +1,110 @@
+[
+  {
+    "id": "safe-0001",
+    "targetId": "stop:stop-anil-kumble-circle",
+    "kind": "stop",
+    "label": "Anil Kumble Circle",
+    "tags": ["well-lit", "busy-crowded", "felt-safe"],
+    "when": "evening",
+    "createdAt": "2026-11-02T19:10:00+05:30"
+  },
+  {
+    "id": "safe-0002",
+    "targetId": "stop:stop-anil-kumble-circle",
+    "kind": "stop",
+    "label": "Anil Kumble Circle",
+    "tags": ["busy-crowded", "respectful-drivers"],
+    "when": "evening",
+    "createdAt": "2026-11-04T18:35:00+05:30"
+  },
+  {
+    "id": "safe-0003",
+    "targetId": "stop:stop-anil-kumble-circle",
+    "kind": "stop",
+    "label": "Anil Kumble Circle",
+    "tags": ["quiet-at-night", "avoid-after-9"],
+    "when": "night",
+    "createdAt": "2026-11-05T22:05:00+05:30"
+  },
+  {
+    "id": "safe-0004",
+    "targetId": "stop:stop-anil-kumble-circle",
+    "kind": "stop",
+    "label": "Anil Kumble Circle",
+    "tags": ["well-lit", "felt-safe"],
+    "when": "morning",
+    "createdAt": "2026-11-07T07:45:00+05:30"
+  },
+  {
+    "id": "safe-0005",
+    "targetId": "stop:stop-mg-road-metro",
+    "kind": "stop",
+    "label": "MG Road Metro",
+    "tags": ["felt-safe", "busy-crowded"],
+    "when": "afternoon",
+    "createdAt": "2026-11-03T14:20:00+05:30"
+  },
+  {
+    "id": "safe-0006",
+    "targetId": "stop:stop-mg-road-metro",
+    "kind": "stop",
+    "label": "MG Road Metro",
+    "tags": ["busy-crowded", "respectful-drivers"],
+    "when": "evening",
+    "createdAt": "2026-11-06T19:55:00+05:30"
+  },
+  {
+    "id": "safe-0007",
+    "targetId": "stop:stop-mg-road-metro",
+    "kind": "stop",
+    "label": "MG Road Metro",
+    "tags": ["avoid-after-9", "overcharged"],
+    "when": "night",
+    "createdAt": "2026-11-08T21:40:00+05:30"
+  },
+  {
+    "id": "safe-0008",
+    "targetId": "route:route-marathahalli-whitefield",
+    "kind": "route",
+    "label": "Marathahalli – Whitefield",
+    "tags": ["felt-safe", "well-lit"],
+    "when": "morning",
+    "createdAt": "2026-11-02T08:15:00+05:30"
+  },
+  {
+    "id": "safe-0009",
+    "targetId": "route:route-marathahalli-whitefield",
+    "kind": "route",
+    "label": "Marathahalli – Whitefield",
+    "tags": ["busy-crowded"],
+    "when": "evening",
+    "createdAt": "2026-11-05T18:50:00+05:30"
+  },
+  {
+    "id": "safe-0010",
+    "targetId": "route:route-marathahalli-whitefield",
+    "kind": "route",
+    "label": "Marathahalli – Whitefield",
+    "tags": ["felt-unsafe", "quiet-at-night", "avoid-after-9"],
+    "when": "night",
+    "createdAt": "2026-11-07T23:05:00+05:30"
+  },
+  {
+    "id": "safe-0011",
+    "targetId": "stop:stop-marathahalli-bridge",
+    "kind": "stop",
+    "label": "Marathahalli Bridge",
+    "tags": ["felt-unsafe", "quiet-at-night"],
+    "when": "night",
+    "createdAt": "2026-11-09T22:30:00+05:30"
+  },
+  {
+    "id": "safe-0012",
+    "targetId": "route:route-hebbal-shivajinagar",
+    "kind": "route",
+    "label": "Hebbal – Shivajinagar",
+    "tags": ["avoid-after-9"],
+    "when": "night",
+    "createdAt": "2026-11-10T21:20:00+05:30"
+  }
+]

@@ -1,37 +1,31 @@
--- Ghost-Routes schema for Supabase.
--- Run this in the Supabase dashboard -> SQL Editor.
+-- Ghost Routes — logged routes table.
+-- Run this in the Supabase SQL editor, then set SUPABASE_URL and
+-- SUPABASE_SERVICE_ROLE_KEY (or an anon key with insert/select policies).
 
 create extension if not exists "pgcrypto";
 
 create table if not exists public.routes (
   id uuid primary key default gen_random_uuid(),
-  origin text not null,
-  destination text not null,
-  description text,
+  route_name text not null,
+  vehicle_type text not null default 'Shared Auto',
+  estimated_fare text not null default 'Unknown',
+  frequency text not null default 'Unknown',
+  stops jsonb not null default '[]'::jsonb,
+  path_coordinates jsonb not null default '[]'::jsonb,
   created_at timestamptz not null default now()
 );
 
--- Coordinates are needed to draw a route on the map. They are filled in by
--- /api/routes when the place names resolve, and stay null when they do not.
--- The app reads/writes dest_lat / dest_lng (not destination_lat / _lng).
-alter table public.routes
-  add column if not exists origin_lat double precision,
-  add column if not exists origin_lng double precision,
-  add column if not exists dest_lat double precision,
-  add column if not exists dest_lng double precision;
+create index if not exists routes_created_at_idx on public.routes (created_at desc);
 
 alter table public.routes enable row level security;
 
-drop policy if exists "Routes are publicly readable" on public.routes;
-create policy "Routes are publicly readable"
-  on public.routes for select
-  using (true);
+-- Anyone may read logged routes (they are public transit data).
+drop policy if exists "routes are readable" on public.routes;
+create policy "routes are readable" on public.routes
+  for select using (true);
 
-drop policy if exists "Anyone can log a route" on public.routes;
-create policy "Anyone can log a route"
-  on public.routes for insert
-  with check (
-    length(btrim(origin)) between 1 and 120
-    and length(btrim(destination)) between 1 and 120
-    and coalesce(length(description), 0) <= 600
-  );
+-- Writes go through /api/routes. With a service-role key RLS is bypassed; with
+-- an anon key, allow inserts explicitly.
+drop policy if exists "routes are insertable" on public.routes;
+create policy "routes are insertable" on public.routes
+  for insert with check (true);

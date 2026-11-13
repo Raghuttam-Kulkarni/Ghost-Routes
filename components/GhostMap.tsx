@@ -27,7 +27,7 @@ export default function GhostMap({
   externalRoutes = [],
   /**
    * Part of the module's public prop surface so a host can pass the same
-   * integration callbacks to either entry point. RouteAIStudio is the component
+   * integration callbacks to either entry point. GhostRouteMapper is the component
    * that actually fires it when a normalization succeeds.
    */
   onRouteNormalized: _onRouteNormalized,

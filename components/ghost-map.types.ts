@@ -75,8 +75,8 @@ export interface GhostMapProps {
    */
   externalRoutes?: GhostRoute[];
   /**
-   * Notified with the normalized route. RouteAIStudio is the component that
-   * fires this; the map accepts it so a host can wire one callback regardless of
+   * Notified with the normalized route. GhostRouteMapper is the component
+   * that fires this; the map accepts it so a host can wire one callback regardless of
    * which entry point it renders.
    */
   onRouteNormalized?: (routeData: NormalizedRouteData) => void;

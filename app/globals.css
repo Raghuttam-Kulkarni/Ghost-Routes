@@ -12,7 +12,9 @@ body {
 body {
   background-color: #03070f;
   color: #e6f7ff;
-  overflow: hidden;
+  /* Vertical scrolling stays available: the AI + Maps block is embeddable in
+     pages, modals and tabs, none of which may be locked to one screen. */
+  overflow-x: hidden;
 }
 
 /*
@@ -42,7 +44,7 @@ body {
 }
 
 /* The map is its own stacking context, so the floating HUD (z-[500]) always sits
-   above the panes without competing with the page header. */
+   above the panes without competing with the host page chrome. */
 .mlm-container {
   isolation: isolate;
   z-index: 0;

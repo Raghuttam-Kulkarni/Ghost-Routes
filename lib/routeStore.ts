@@ -3,12 +3,12 @@
  *
  * Supabase is reached over its REST (PostgREST) endpoint with plain `fetch`, so
  * the project needs no extra SDK dependency and nothing initialises at import
- * time. When the environment variables are missing or the request fails, the
- * routes are kept in this module's memory instead: the UI keeps working end to
- * end and reports where the data actually went.
+ * time. When the environment variables are missing or the request fails, routes
+ * are kept in this module's memory instead: the UI keeps working end to end and
+ * reports where the data actually went.
  */
 
-import { FALLBACK_ROUTES, type DemoStop } from "@/lib/bengaluru";
+import type { DemoStop } from "@/lib/bengaluru";
 
 export interface SavedRoute {
   id: string;
@@ -52,18 +52,11 @@ export function isSupabaseConfigured(): boolean {
   return Boolean(supabaseUrl() && supabaseKey());
 }
 
-/** Seeded so LOGGED ROUTES is never empty on a fresh clone. */
-const memory: SavedRoute[] = FALLBACK_ROUTES.map((route, index) => ({
-  id: `demo-${index + 1}`,
-  routeName: route.routeName,
-  vehicleType: route.vehicleType,
-  estimatedFare: route.estimatedFare,
-  frequency: route.frequency,
-  stops: route.stops,
-  pathCoordinates: route.pathCoordinates,
-  source: "demo" as const,
-  createdAt: new Date(0).toISOString(),
-}));
+/**
+ * Fallback buffer for writes when Supabase is unreachable. Starts empty on
+ * purpose: nothing is seeded, so the app never shows invented routes.
+ */
+const memory: SavedRoute[] = [];
 
 function readId(): string {
   return typeof crypto !== "undefined" && "randomUUID" in crypto
@@ -150,7 +143,7 @@ async function call(url: string, key: string, init: RequestInit): Promise<Respon
   }
 }
 
-/** Supabase rows first, demo seed last, so a fresh project still shows routes. */
+/** Supabase rows only: an empty table yields an empty list, never demo data. */
 export async function listRoutes(): Promise<{ routes: SavedRoute[]; source: "supabase" | "demo" }> {
   const url = supabaseUrl();
   const key = supabaseKey();
@@ -165,10 +158,10 @@ export async function listRoutes(): Promise<{ routes: SavedRoute[]; source: "sup
 
     const rows = (await response.json()) as RouteRow[];
     const stored = rows.map(fromRow).filter((route): route is SavedRoute => route !== null);
-    return { routes: [...stored, ...memory], source: "supabase" };
+    return { routes: stored, source: "supabase" };
   } catch (error) {
     const message = error instanceof Error ? error.message : "unknown error";
-    console.warn(`[routeStore] list failed (${message}) — serving the in-memory demo routes`);
+    console.warn(`[routeStore] list failed (${message}) — serving nothing instead of demo routes`);
     return { routes: [...memory], source: "demo" };
   }
 }

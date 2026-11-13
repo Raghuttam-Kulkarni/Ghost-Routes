@@ -2,13 +2,14 @@ import { AccountMenu } from '@/components/account-menu'
 import { AiRoutePanel } from '@/components/ai-maps/ai-route-panel'
 import { MapLoader } from '@/components/map-loader'
 import { ThemeToggle } from '@/components/theme-toggle'
-import { getRoutes } from '@/lib/routes'
+import { fetchRouteHistory } from '@/lib/routeHistory'
 import { getSession } from '@/lib/session'
 
 export const dynamic = 'force-dynamic'
 
 export default async function Page() {
-  const routes = getRoutes()
+  // Only real logged history is drawn; with no rows the map stays clean.
+  const routes = await fetchRouteHistory()
   const session = await getSession()
 
   return (

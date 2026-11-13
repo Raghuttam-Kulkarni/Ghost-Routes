@@ -19,7 +19,7 @@ export type LatLng = [number, number];
 const OSRM_ROUTE_BASE = "https://router.project-osrm.org/route/v1/driving";
 
 /** Hard cap so a hanging OSRM request can never stall normalization. */
-export const OSRM_TIMEOUT_MS = 3000;
+export const OSRM_TIMEOUT_MS = 7000;
 
 function isUsableStop(stop: SnapStop): boolean {
   return (

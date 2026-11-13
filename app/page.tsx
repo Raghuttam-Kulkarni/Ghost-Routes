@@ -22,13 +22,12 @@ const RouteAIStudio = dynamic(() => import("@/components/RouteAIStudio"), {
 export default function Home() {
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-7xl flex-col gap-5 p-4 sm:p-6 lg:p-8">
-      <header className="flex flex-col gap-1">
+      <header className="flex flex-col gap-2">
         <p className="text-[11px] tracking-[0.35em] text-cyan-400/70 uppercase">Ghost Routes</p>
-        <h1 className="text-2xl font-semibold text-cyan-50 sm:text-3xl">AI + Maps module</h1>
+        <h1 className="text-2xl font-semibold text-cyan-50 sm:text-3xl">Discover &amp; Map Local Routes</h1>
         <p className="max-w-2xl text-sm text-slate-400">
-          Type a route the way people actually describe it — or paste chaotic GPS coordinates — and Gemini
-          normalizes it into a clean stop list and road-following polyline. The map opens on a preloaded
-          Bengaluru route, and the LOGGED ROUTES, RAW GPS and CLEANED layers switch on and off independently.
+          Describe a shared auto, minibus, or local transit route in plain words—we&apos;ll map the exact
+          stops, fare, and street path.
         </p>
       </header>
 

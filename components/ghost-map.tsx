@@ -63,11 +63,12 @@ function routeBounds(route: GhostRoute) {
   ])
 }
 
-// One permanent basemap: CartoDB Dark Matter. No theme-dependent tiles, so the
-// background can never switch mid-session or fight another map's tiles.
-const TILE_URL = 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
+// One permanent basemap: the public, keyless OpenStreetMap tile server. The
+// dark "AI route" look comes from inverting the tile pane in CSS (see
+// hud-fixes.css), so no tile provider ever needs an API key.
+const TILE_URL = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'
 
-const ATTRIBUTION = '© OpenStreetMap contributors © CARTO'
+const ATTRIBUTION = '© OpenStreetMap contributors'
 
 // Drop Leaflet's default "Leaflet |" prefix so the visible credit is exactly
 // the map data attribution.
@@ -225,7 +226,7 @@ export default function GhostMap({ routes, signedIn }: { routes: GhostRoute[]; s
   const [reviewTarget, setReviewTarget] = useState<ReviewTarget | null>(null)
   // Safety notes are tags only, anonymous, and device-local.
   const [safetyNotes, setSafetyNotes] = useState<SafetyNote[]>(() => getSafetyNotes())
-  const [notedSafetyIds, setNotedSafetyIds] = useState<string[]>(() => notedTargetsToday())
+  const [notedSafetyIds, setNotedSafetyIds] = useState<string[]>(() => notifiedTargetsToday())
   const [safetyTarget, setSafetyTarget] = useState<SafetyTarget | null>(null)
   // Disruption reports expire after 24 hours and carry no user id.
   const [alerts, setAlerts] = useState<RouteAlert[]>(() => getAlerts())

@@ -23,7 +23,7 @@ export default async function Page() {
       </div>
 
       {/* AI + Maps lives in its own sheet so it never restyles the map shell. */}
-      <div className="pointer-events-none fixed bottom-4 left-4 z-[1090] md:bottom-6 md:left-6">
+      <div className="pointer-events-none fixed bottom-14 left-3 z-[1090] md:bottom-16">
         <AiRoutePanel />
       </div>
     </main>

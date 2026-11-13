@@ -226,7 +226,7 @@ export default function GhostMap({ routes, signedIn }: { routes: GhostRoute[]; s
   const [reviewTarget, setReviewTarget] = useState<ReviewTarget | null>(null)
   // Safety notes are tags only, anonymous, and device-local.
   const [safetyNotes, setSafetyNotes] = useState<SafetyNote[]>(() => getSafetyNotes())
-  const [notedSafetyIds, setNotedSafetyIds] = useState<string[]>(() => notifiedTargetsToday())
+  const [notedSafetyIds, setNotedSafetyIds] = useState<string[]>(() => notedTargetsToday())
   const [safetyTarget, setSafetyTarget] = useState<SafetyTarget | null>(null)
   // Disruption reports expire after 24 hours and carry no user id.
   const [alerts, setAlerts] = useState<RouteAlert[]>(() => getAlerts())

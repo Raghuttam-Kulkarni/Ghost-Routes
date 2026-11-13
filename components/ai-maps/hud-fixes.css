@@ -1,7 +1,8 @@
 /*
  * Two surgical HUD fixes. Nothing here changes colours, spacing scale, fonts or
- * positions — only the scrollbar on the vehicle-filter row and the horizontal
- * padding of those pills so the whole row fits on one line.
+ * positions — only the scrollbar on the vehicle-filter row, the horizontal
+ * padding of those pills so the whole row fits on one line, and the dark tile
+ * treatment for the keyless OpenStreetMap basemap.
  */
 
 /* Vehicle filter row (ALL / AUTO / MINIBUS / BUS / JEEP / PICKUP EASE):
@@ -21,4 +22,13 @@ div:has(> [aria-label="Filter routes by vehicle type"])::-webkit-scrollbar {
 [aria-label="Filter routes by vehicle type"] > button {
   padding-inline: 0.5rem;
   letter-spacing: 0.08em;
+}
+
+/*
+ * Dark "AI route" basemap without an API key: OpenStreetMap publishes light
+ * tiles only, so invert the tile pane. Route lines, pins, popups and the HUD sit
+ * in other panes and keep their real colours.
+ */
+.ghost-map .leaflet-tile-pane {
+  filter: invert(100%) hue-rotate(180deg) brightness(95%) contrast(90%);
 }

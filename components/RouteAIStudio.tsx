@@ -5,7 +5,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { FALLBACK_ROUTES, RAW_GPS_SAMPLE } from "@/lib/bengaluru";
 import type { GhostRoute, LatLngTuple, NormalizedRouteData } from "./ghost-map.types";
 import type { ManagedRoute } from "./MapLayerManager";
-import { snapStopsToRoads } from "@/lib/snapToRoads";
+import { snapToRoads } from "@/lib/snapToRoads";
 
 const MAX_INPUT_LENGTH = 4000;
 
@@ -27,7 +27,7 @@ const MapLayerManager = dynamic(() => import("./MapLayerManager"), {
 /** Preloaded so the map and the CLEANED layer are populated on first paint. */
 const DEMO_ROUTE: ManagedRoute = { ...FALLBACK_ROUTES[0], isFallback: true } as ManagedRoute;
 
-/** One-click prompts for a live pitch: fill the input and normalize immediately. */
+/** One-click prompts: fill the input and normalize immediately. */
 const DEMO_SCENARIOS: { label: string; prompt: string }[] = [
   {
     label: "Yelahanka → Majestic",
@@ -175,9 +175,10 @@ export default function RouteAIStudio({
 
   // The preloaded route ships with straight stop-to-stop geometry; snap it to
   // real streets once on mount so the very first paint already follows roads.
+  // snapToRoads memoises its result, so re-renders never re-fetch.
   useEffect(() => {
     let active = true;
-    void snapStopsToRoads(DEMO_ROUTE.stops ?? []).then((path) => {
+    void snapToRoads(DEMO_ROUTE.stops ?? []).then((path) => {
       if (active && path && path.length >= 2) setDemoPath(path);
     });
     return () => {
@@ -333,10 +334,10 @@ export default function RouteAIStudio({
   };
 
   return (
-    <div className="grid flex-1 gap-4 lg:grid-cols-[minmax(0,360px)_1fr]">
+    <div className="grid min-h-0 flex-1 gap-4 lg:grid-cols-[minmax(0,360px)_minmax(0,1fr)]">
       <form
         onSubmit={handleSubmit}
-        className="flex flex-col gap-3 rounded-2xl border border-cyan-500/20 bg-[#050b14]/80 p-4"
+        className="flex min-h-0 flex-col gap-3 overflow-y-auto rounded-2xl border border-cyan-500/20 bg-[#050b14]/80 p-4"
       >
         <div>
           <label
@@ -499,12 +500,12 @@ export default function RouteAIStudio({
         )}
       </form>
 
-      <div className="flex min-h-0 flex-col gap-2">
+      <div className="flex min-h-[340px] min-w-0 flex-col gap-2">
         <p className="text-[11px] text-slate-500">
           Pick a stop in the summary to jump to it on the map.
         </p>
 
-        <div className="relative h-[58vh] min-h-[340px] overflow-hidden rounded-2xl border border-cyan-500/25 shadow-[0_0_40px_-12px_rgba(0,243,255,0.55)] lg:h-[calc(100dvh-13rem)]">
+        <div className="relative min-h-[300px] flex-1 overflow-hidden rounded-2xl border border-cyan-500/25 shadow-[0_0_40px_-12px_rgba(0,243,255,0.55)]">
           <MapLayerManager
             route={mapRoute}
             focusPoint={focusStop}

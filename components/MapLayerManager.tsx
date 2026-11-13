@@ -7,9 +7,10 @@ import type { GhostRoute } from "./ghost-map.types";
 
 const DEFAULT_CENTER: [number, number] = [13.028, 77.545]; // Bengaluru
 const DEFAULT_ZOOM = 13;
-const ROUTE_COLOR = "#00f3ff";
-const RAW_COLOR = "#ffb86b";
-const SAVED_COLOR = "#7cf6a0";
+/** One colour per layer, used for both the polyline and its toggle chip. */
+const ROUTE_COLOR = "#00f3ff"; // AI CLEANED — glowing cyan
+const RAW_COLOR = "#ef4444"; // RAW GPS — dashed coral red
+const SAVED_COLOR = "#f59e0b"; // LOGGED ROUTES — amber gold
 
 export interface ManagedStop {
   name: string;
@@ -31,10 +32,12 @@ export interface ManagedRoute {
 export interface MapLayerManagerProps {
   /** CLEANED: the AI-normalized route. */
   route?: ManagedRoute | null;
-  /** RAW GPS: the messy input trace, drawn as an amber dashed line and dots. */
+  /** RAW GPS: the messy input trace, drawn as a coral dashed line and dots. */
   rawCoordinates?: [number, number][];
   /** LOGGED ROUTES: routes persisted in Supabase (or the demo seed). */
   savedRoutes?: GhostRoute[];
+  /** A stop chosen in the summary card; the map pans to it. */
+  focusPoint?: { lat: number; lng: number; key: number } | null;
   center?: [number, number];
   zoom?: number;
   className?: string;
@@ -136,6 +139,7 @@ export default function MapLayerManager({
   route = null,
   rawCoordinates = [],
   savedRoutes = [],
+  focusPoint = null,
   center = DEFAULT_CENTER,
   zoom = DEFAULT_ZOOM,
   className = "",
@@ -384,12 +388,22 @@ export default function MapLayerManager({
     });
   }, [route, rawCoordinates, savedRoutes]);
 
+  // Pan to a stop picked from the summary card without re-framing the route.
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !focusPoint) return;
+    map.flyTo([focusPoint.lat, focusPoint.lng], Math.max(map.getZoom(), 16), {
+      animate: true,
+      duration: 0.8,
+    });
+  }, [focusPoint]);
+
   const toggleLayer = (key: LayerKey) => setLayers((current) => ({ ...current, [key]: !current[key] }));
 
-  const controls: { key: LayerKey; label: string; count: number }[] = [
-    { key: "logged", label: "Logged routes", count: savedCount },
-    { key: "rawGps", label: "Raw GPS", count: rawCount },
-    { key: "cleaned", label: "Cleaned", count: pathCount || stopCount },
+  const controls: { key: LayerKey; label: string; count: number; color: string }[] = [
+    { key: "logged", label: "Logged routes", count: savedCount, color: SAVED_COLOR },
+    { key: "rawGps", label: "Raw GPS", count: rawCount, color: RAW_COLOR },
+    { key: "cleaned", label: "AI Cleaned", count: pathCount || stopCount, color: ROUTE_COLOR },
   ];
 
   return (
@@ -412,27 +426,34 @@ export default function MapLayerManager({
                 aria-pressed={active}
                 disabled={control.count === 0}
                 onClick={() => toggleLayer(control.key)}
-                className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-medium tracking-[0.08em] uppercase transition disabled:cursor-not-allowed disabled:opacity-40 ${
+                style={
                   active
-                    ? "bg-cyan-400/20 text-cyan-100"
-                    : "text-slate-400 hover:text-slate-200"
+                    ? {
+                        color: control.color,
+                        borderColor: `${control.color}66`,
+                        background: `${control.color}1f`,
+                        boxShadow: `0 0 12px -2px ${control.color}aa`,
+                      }
+                    : { borderColor: "transparent" }
+                }
+                className={`flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-medium tracking-[0.08em] uppercase transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-40 ${
+                  active ? "" : "text-slate-400 hover:text-slate-200"
                 }`}
               >
                 <span
                   aria-hidden="true"
-                  className={`h-1.5 w-1.5 rounded-full ${
-                    active ? "bg-[#00f3ff] shadow-[0_0_6px_#00f3ff]" : "bg-slate-600"
-                  }`}
+                  style={{
+                    background: active ? control.color : "#475569",
+                    boxShadow: active ? `0 0 6px ${control.color}` : "none",
+                  }}
+                  className="h-1.5 w-1.5 rounded-full transition-colors duration-200"
                 />
                 {control.label}
-                <span className="text-slate-500">{control.count}</span>
+                <span className={active ? "opacity-70" : "text-slate-500"}>{control.count}</span>
               </button>
             );
           })}
         </div>
-        <span className="rounded-full border border-cyan-500/15 bg-[#050b14]/80 px-2 py-0.5 text-[9px] tracking-[0.15em] text-slate-500 uppercase">
-          Keyless OSM · no API key
-        </span>
       </div>
 
       <style>{`
@@ -449,6 +470,19 @@ export default function MapLayerManager({
            real colours. */
         .mlm-container .leaflet-tile-pane {
           filter: invert(100%) hue-rotate(180deg) brightness(95%) contrast(90%);
+        }
+        /* Layers fade in as they are shown; hidden layers are removed from the
+           map, so only the toggled one changes. */
+        .mlm-container .leaflet-overlay-pane svg path,
+        .mlm-container .leaflet-marker-pane > * {
+          animation: mlm-fade-in 240ms ease-out;
+        }
+        @keyframes mlm-fade-in {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+        .mlm-container .leaflet-tooltip.mlm-tooltip {
+          animation: mlm-fade-in 240ms ease-out;
         }
         .mlm-container .leaflet-bar,
         .mlm-container .leaflet-bar a {

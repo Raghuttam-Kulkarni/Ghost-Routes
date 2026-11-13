@@ -1,44 +1,31 @@
-"use client";
+import { AccountMenu } from '@/components/account-menu'
+import { AiRoutePanel } from '@/components/ai-maps/ai-route-panel'
+import { MapLoader } from '@/components/map-loader'
+import { ThemeToggle } from '@/components/theme-toggle'
+import { getRoutes } from '@/lib/routes'
+import { getSession } from '@/lib/session'
 
-import dynamic from "next/dynamic";
+export const dynamic = 'force-dynamic'
 
-/**
- * The AI + Maps module is embeddable: the page owns the shell (header, nav,
- * spacing) and the module lives inside `#map-workspace`, so a different
- * frontend can mount the same component without inheriting this layout.
- *
- * Leaflet touches `window`/`document` at import time, so the module is loaded
- * client-only; `ssr: false` keeps it out of server rendering and the
- * prerendered HTML, which is what avoids hydration mismatches.
- */
-const GhostRouteMapper = dynamic(() => import("@/components/ai-maps/GhostRouteMapper"), {
-  ssr: false,
-  loading: () => (
-    <div className="flex min-h-[60vh] flex-1 items-center justify-center rounded-2xl border border-cyan-500/20 bg-[#050b14]">
-      <span className="animate-pulse text-xs tracking-[0.3em] text-cyan-300/80 uppercase">
-        Loading ghost routes…
-      </span>
-    </div>
-  ),
-});
+export default async function Page() {
+  const routes = getRoutes()
+  const session = await getSession()
 
-export default function Home() {
   return (
-    <main className="mx-auto flex min-h-dvh w-full max-w-7xl flex-col gap-5 p-4 sm:p-6 lg:p-8">
-      <header className="flex shrink-0 flex-col gap-2">
-        <p className="text-[11px] tracking-[0.35em] text-cyan-400/70 uppercase">Ghost Routes</p>
-        <h1 className="text-2xl font-semibold text-cyan-50 sm:text-3xl">
-          Discover &amp; Map Local Routes
-        </h1>
-        <p className="max-w-2xl text-sm text-slate-400">
-          Describe a shared auto, minibus, or local transit route in plain words—we&apos;ll map the exact
-          stops, fare, and street path.
-        </p>
-      </header>
+    <main className="relative h-dvh w-full overflow-hidden bg-bg">
+      <div className="fixed inset-0 z-0">
+        <MapLoader routes={routes} signedIn={Boolean(session)} />
+      </div>
 
-      <section id="map-workspace" className="w-full">
-        <GhostRouteMapper />
-      </section>
+      <div className="fixed right-4 top-4 z-[1100] flex flex-col items-end gap-2 md:right-6 md:top-6">
+        <ThemeToggle />
+        <AccountMenu signedIn={Boolean(session)} />
+      </div>
+
+      {/* AI + Maps lives in its own sheet so it never restyles the map shell. */}
+      <div className="pointer-events-none fixed bottom-4 left-4 z-[1090] md:bottom-6 md:left-6">
+        <AiRoutePanel />
+      </div>
     </main>
-  );
+  )
 }

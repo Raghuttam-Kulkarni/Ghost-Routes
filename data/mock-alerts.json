@@ -1,0 +1,29 @@
+[
+  {
+    "id": "alert-0001",
+    "routeId": "route-banashankari-majestic",
+    "kind": "not-running",
+    "note": "No bus has come since 8 am.",
+    "minutesAgo": 120
+  },
+  {
+    "id": "alert-0002",
+    "routeId": "route-banashankari-majestic",
+    "kind": "delayed",
+    "minutesAgo": 45
+  },
+  {
+    "id": "alert-0003",
+    "routeId": "route-banashankari-majestic",
+    "kind": "route-changed",
+    "note": "Turning at KR Market instead.",
+    "minutesAgo": 20
+  },
+  {
+    "id": "alert-0004",
+    "routeId": "route-hebbal-shivajinagar",
+    "kind": "strike",
+    "note": "Road closed near Cantonment.",
+    "minutesAgo": 240
+  }
+]

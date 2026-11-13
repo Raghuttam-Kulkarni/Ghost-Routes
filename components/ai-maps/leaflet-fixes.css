@@ -1,0 +1,44 @@
+/*
+ * Scoped Leaflet fixes for the AI + Maps module.
+ *
+ * Tailwind's preflight sets `img { display: block; max-width: 100%; height: auto }`.
+ * Leaflet positions tiles and div-icon markers at their own pixel size, so those
+ * page-wide rules slice tiles and shrink pins. These selectors only touch the
+ * module's own map container, leaving the rest of the app untouched.
+ */
+
+.mlm-container .leaflet-container {
+  height: 100%;
+  width: 100%;
+  background: #050b14;
+  font-family: inherit;
+}
+
+.mlm-container .leaflet-container img,
+.mlm-container .leaflet-container svg {
+  max-width: none !important;
+  max-height: none !important;
+}
+
+.mlm-container .leaflet-container img.leaflet-tile {
+  display: block;
+  width: 256px;
+  height: 256px;
+  max-width: none !important;
+  max-height: none !important;
+}
+
+/*
+ * Keep the module's map in its own stacking context. The wrapper sits at z-0 and
+ * the module's HUD chips at z-[500], so neither can climb over the app's header,
+ * sheets or the fixed theme/account controls (z-[1080]–z-[1100]).
+ */
+.mlm-container {
+  position: relative;
+  isolation: isolate;
+  z-index: 0;
+}
+
+.leaflet-container .leaflet-control-zoom a {
+  line-height: 26px;
+}

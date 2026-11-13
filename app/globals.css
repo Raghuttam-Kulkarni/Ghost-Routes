@@ -1,55 +1,303 @@
-@import "tailwindcss";
+@import 'tailwindcss';
+@import 'tw-animate-css';
+@import 'shadcn/tailwind.css';
 
+@custom-variant dark (&:is(.dark *));
+
+/* Light theme (default) */
 :root {
+  color-scheme: light;
+
+  --bg: #f4f3ee;
+  --surface: #ffffff;
+  --card-bg: #faf9f5;
+  --line: #d9d6cc;
+  --text: #14181d;
+  --text-muted: #5b6672;
+
+  --route-solid: #0f9d75;
+  --route-flicker: #b7791f;
+  --route-whisper: #8a94a0;
+
+  --hairline: 0.5px;
+
+  /* shadcn token mapping */
+  --background: var(--bg);
+  --foreground: var(--text);
+  --card: var(--card-bg);
+  --card-foreground: var(--text);
+  --popover: var(--surface);
+  --popover-foreground: var(--text);
+  --primary: var(--text);
+  --primary-foreground: var(--bg);
+  --secondary: var(--surface);
+  --secondary-foreground: var(--text);
+  --muted: var(--surface);
+  --muted-foreground: var(--text-muted);
+  --accent: var(--card-bg);
+  --accent-foreground: var(--text);
+  --destructive: #c2410c;
+  --border: var(--line);
+  --input: var(--line);
+  --ring: var(--route-solid);
+  --radius: 0.375rem;
+}
+
+.dark {
   color-scheme: dark;
+
+  --bg: #0b0f14;
+  --surface: #10161d;
+  --card-bg: #131a22;
+  --line: #2a3440;
+  --text: #e8e6df;
+  --text-muted: #8b98a6;
+
+  --route-solid: #7cf0c8;
+  --route-flicker: #e8c06a;
+  --route-whisper: #5a6978;
+
+  --destructive: #f07c5a;
 }
 
-html,
-body {
-  height: 100%;
+@theme inline {
+  --font-sans: var(--font-space-grotesk), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-jetbrains-mono), ui-monospace, monospace;
+
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-card: var(--card);
+  --color-line: var(--line);
+  --color-text: var(--text);
+  --color-muted-text: var(--text-muted);
+
+  --color-route-solid: var(--route-solid);
+  --color-route-flicker: var(--route-flicker);
+  --color-route-whisper: var(--route-whisper);
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
 }
 
-body {
-  background-color: #03070f;
-  color: #e6f7ff;
-  /* Vertical scrolling stays available: the AI + Maps block is embeddable in
-     pages, modals and tabs, none of which may be locked to one screen. */
-  overflow-x: hidden;
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  html,
+  body {
+    @apply bg-background text-foreground font-sans;
+    height: 100%;
+  }
 }
 
-/*
- * Tailwind's preflight sets `img { display: block; max-width: 100% }`. That rule
- * also hits Leaflet's map tiles and div-icon markers, which are absolutely
- * positioned at their own pixel size — a max-width there squashes tiles into
- * stripes and shrinks markers, so the map opts out.
- */
-.leaflet-container img,
-.leaflet-container svg {
-  max-width: none !important;
-  max-height: none !important;
+/* Flat style (unlayered so it wins over utilities): hairline borders, no shadows */
+*,
+*::before,
+*::after {
+  box-shadow: none !important;
+  text-shadow: none !important;
 }
 
-.leaflet-container img.leaflet-tile {
-  display: block;
-  width: 256px;
-  height: 256px;
-  max-width: none !important;
-  max-height: none !important;
+/* Leaflet: match theme tokens and flat style */
+.ghost-map.leaflet-container {
+  background: var(--bg);
+  font-family: var(--font-sans);
 }
 
-.leaflet-container {
-  height: 100%;
-  width: 100%;
-  background: #050b14;
+.ghost-map .leaflet-control-attribution {
+  background: var(--surface);
+  color: var(--text-muted);
+  border-top: var(--hairline) solid var(--line);
+  border-left: var(--hairline) solid var(--line);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  padding: 2px 6px;
 }
 
-/* The map is its own stacking context, so the floating HUD (z-[500]) always sits
-   above the panes without competing with the host page chrome. */
-.mlm-container {
-  isolation: isolate;
-  z-index: 0;
+.ghost-map .leaflet-control-attribution a {
+  color: var(--text);
 }
 
-.leaflet-container .leaflet-control-zoom a {
-  line-height: 26px;
+/* Route lines: colors come from theme tokens via CSS (overrides SVG attributes) */
+.ghost-map .route-line {
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  cursor: pointer;
+  /* Tier changes remount the path, so the fade is an entrance animation. */
+  animation: route-line-fade 600ms ease-out;
 }
+
+@keyframes route-line-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.ghost-map .route-solid {
+  stroke: var(--route-solid);
+  stroke-width: 5px;
+  stroke-opacity: 1;
+  stroke-dasharray: none;
+}
+
+.ghost-map .route-flicker {
+  stroke: var(--route-flicker);
+  stroke-width: 3px;
+  stroke-opacity: 1;
+  stroke-dasharray: 9 6;
+  stroke-linecap: butt;
+}
+
+.ghost-map .route-whisper {
+  stroke: var(--route-whisper);
+  stroke-width: 3px;
+  stroke-opacity: 1;
+  stroke-dasharray: 1 7;
+  stroke-linecap: round;
+}
+
+/* Clicked route: same theme color, slightly thicker */
+.ghost-map .route-solid.route-selected {
+  stroke-width: 7px;
+}
+
+.ghost-map .route-flicker.route-selected,
+.ghost-map .route-whisper.route-selected {
+  stroke-width: 5px;
+}
+
+.ghost-map .route-stop {
+  fill: var(--bg);
+  fill-opacity: 1;
+  stroke-width: 2px;
+}
+
+.ghost-map .route-stop-solid { stroke: var(--route-solid); }
+.ghost-map .route-stop-flicker { stroke: var(--route-flicker); }
+.ghost-map .route-stop-whisper { stroke: var(--route-whisper); }
+
+.ghost-map .route-tooltip {
+  background: var(--surface);
+  color: var(--text);
+  border: var(--hairline) solid var(--line);
+  border-radius: var(--radius-sm);
+  padding: 6px 8px;
+}
+
+.ghost-map .route-tooltip::before {
+  display: none;
+}
+
+.ghost-map .route-stop { cursor: pointer; }
+
+/* Stop halos: two concentric rings in the solid route colour that pulse
+   outward slowly. Radius is set per stop in the layer component. */
+.ghost-map .route-ripple {
+  stroke: none;
+  fill: var(--route-solid);
+  pointer-events: none;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: route-ripple-pulse 5s ease-out infinite;
+}
+
+.ghost-map .route-ripple-inner { fill-opacity: 0.35; }
+
+.ghost-map .route-ripple-outer {
+  fill-opacity: 0.15;
+  animation-delay: 1.25s;
+}
+
+@keyframes route-ripple-pulse {
+  0% { transform: scale(1); opacity: 1; }
+  70% { opacity: 0.25; }
+  100% { transform: scale(1.7); opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ghost-map .route-ripple,
+  .ghost-map .route-line { animation: none; }
+}
+
+.ghost-map .stop-popup .leaflet-popup-content-wrapper {
+  background: var(--surface);
+  color: var(--text);
+  border: var(--hairline) solid var(--line);
+  border-radius: var(--radius-sm);
+  box-shadow: none;
+}
+
+.ghost-map .stop-popup .leaflet-popup-content {
+  margin: 8px 28px 8px 10px;
+  line-height: 1.35;
+}
+
+.ghost-map .stop-popup .leaflet-popup-tip-container {
+  display: none;
+}
+
+.ghost-map .stop-popup .leaflet-popup-close-button {
+  color: var(--text-muted);
+}
+
+.ghost-map .stop-popup .leaflet-popup-close-button:hover {
+  color: var(--text);
+}
+
+/* Pickup-ease reviews: mint = easy, amber = sometimes, muted = hard */
+.ghost-map .pickup-spot {
+  stroke: var(--surface);
+  stroke-width: 2px;
+  fill-opacity: 0.9;
+  cursor: pointer;
+}
+
+.ghost-map .pickup-spot-quick { fill: var(--route-solid); }
+.ghost-map .pickup-spot-sometimes { fill: var(--route-flicker); }
+.ghost-map .pickup-spot-hard,
+.ghost-map .pickup-spot-unknown { fill: var(--route-whisper); }
+
+/* Active disruption alert: one small amber dot on the line itself */
+.ghost-map .alert-dot {
+  fill: var(--route-flicker);
+  stroke: var(--surface);
+  stroke-width: 2px;
+  pointer-events: none;
+}
+
+.ghost-map .pickup-popup .leaflet-popup-content {
+  margin: 10px 30px 10px 12px;
+  line-height: 1.35;
+  /* Pickup ease plus safety can get tall; scroll inside the popup on phones. */
+  max-height: min(60vh, 420px);
+  overflow-y: auto;
+}
+
+.border { border-width: var(--hairline); }
+.border-t { border-top-width: var(--hairline); }
+.border-r { border-right-width: var(--hairline); }
+.border-b { border-bottom-width: var(--hairline); }
+.border-l { border-left-width: var(--hairline); }
+.border-x { border-inline-width: var(--hairline); }
+.border-y { border-block-width: var(--hairline); }

@@ -3,7 +3,6 @@
 import 'leaflet/dist/leaflet.css'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { latLngBounds, type Map as LeafletMap } from 'leaflet'
-import { useTheme } from 'next-themes'
 import { useRouter } from 'next/navigation'
 import { MapContainer, TileLayer, useMap } from 'react-leaflet'
 import { AlertSheet } from '@/components/alert-sheet'
@@ -64,16 +63,11 @@ function routeBounds(route: GhostRoute) {
   ])
 }
 
-// Keyless, theme-matched basemaps from Esri's Canvas service. CARTO's raster
-// tiles now require an API key and answer keyless requests with an
-// "API KEY REQUIRED" placeholder tile, so these need no key at all.
-const TILE_URLS = {
-  dark: 'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}',
-  light:
-    'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}',
-} as const
+// One permanent basemap: CartoDB Dark Matter. No theme-dependent tiles, so the
+// background can never switch mid-session or fight another map's tiles.
+const TILE_URL = 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
 
-const ATTRIBUTION = '© OpenStreetMap contributors © Esri, HERE, Garmin, USGS'
+const ATTRIBUTION = '© OpenStreetMap contributors © CARTO'
 
 // Drop Leaflet's default "Leaflet |" prefix so the visible credit is exactly
 // the map data attribution.
@@ -217,7 +211,6 @@ function MapLongPress({ onSpot }: { onSpot: (lat: number, lon: number) => void }
 }
 
 export default function GhostMap({ routes, signedIn }: { routes: GhostRoute[]; signedIn: boolean }) {
-  const { resolvedTheme } = useTheme()
   const router = useRouter()
   const [selectedRouteId, setSelectedRouteId] = useState<string | null>(null)
   const [bookingRouteId, setBookingRouteId] = useState<string | null>(null)
@@ -242,7 +235,6 @@ export default function GhostMap({ routes, signedIn }: { routes: GhostRoute[]; s
   const [alertRouteId, setAlertRouteId] = useState<string | null>(null)
   const pickupSpots = useMemo(() => groupSpots(reviews), [reviews])
   const alertSummaries = useMemo(() => summarizeAlerts(alerts), [alerts])
-  const tileTheme = resolvedTheme === 'light' ? 'light' : 'dark'
   const selectedRoute = routeData.find((route) => route.id === selectedRouteId) ?? null
   const selectedSafety = useMemo(
     () =>
@@ -478,12 +470,7 @@ export default function GhostMap({ routes, signedIn }: { routes: GhostRoute[]; s
         <AttributionPrefix />
         <MapInstance onReady={setMap} />
         <FitRoutes routes={routes} />
-        <TileLayer
-          key={tileTheme}
-          url={TILE_URLS[tileTheme]}
-          attribution={ATTRIBUTION}
-          maxZoom={16}
-        />
+        <TileLayer url={TILE_URL} attribution={ATTRIBUTION} maxZoom={19} />
         <CommunityRoutes />
         <RouteLayer
           routes={visibleRoutes}

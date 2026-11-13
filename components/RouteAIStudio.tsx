@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { FALLBACK_ROUTES, RAW_GPS_SAMPLE } from "@/lib/bengaluru";
 import type { GhostRoute, LatLngTuple, NormalizedRouteData } from "./ghost-map.types";
 import type { ManagedRoute } from "./MapLayerManager";
+import { snapStopsToRoads } from "@/lib/snapToRoads";
 
 const MAX_INPUT_LENGTH = 4000;
 
@@ -43,6 +44,13 @@ const DEMO_SCENARIOS: { label: string; prompt: string }[] = [
     prompt: "Morning minibus from Indiranagar to Electronic City Phase 1 via Silk Board",
   },
 ];
+
+/** Fare arrives as "INR 25-30"; the card shows it the way riders read it. */
+function formatFare(fare: string): string {
+  const trimmed = fare.trim();
+  if (!trimmed || /^unknown$/i.test(trimmed)) return "Fare unknown";
+  return trimmed.replace(/\bINR\b\s*/gi, "₹").replace(/\s+/g, " ");
+}
 
 export interface RouteAIStudioProps {
   /**
@@ -148,8 +156,9 @@ export default function RouteAIStudio({
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<NormalizedRouteData | null>(null);
+  const [demoPath, setDemoPath] = useState<LatLngTuple[] | null>(null);
+  const [focusStop, setFocusStop] = useState<{ lat: number; lng: number; key: number } | null>(null);
   const [savedRoutes, setSavedRoutes] = useState<GhostRoute[]>([]);
-  const [savedCount, setSavedCount] = useState(0);
   const [saveState, setSaveState] = useState<{ status: "idle" | "saving" | "saved" | "info" | "error"; message: string }>({
     status: "idle",
     message: "",
@@ -164,8 +173,23 @@ export default function RouteAIStudio({
     [rawInput],
   );
 
+  // The preloaded route ships with straight stop-to-stop geometry; snap it to
+  // real streets once on mount so the very first paint already follows roads.
+  useEffect(() => {
+    let active = true;
+    void snapStopsToRoads(DEMO_ROUTE.stops ?? []).then((path) => {
+      if (active && path && path.length >= 2) setDemoPath(path);
+    });
+    return () => {
+      active = false;
+    };
+  }, []);
+
   // Stable identity so the map only re-frames itself when the route changes.
-  const mapRoute = useMemo<ManagedRoute>(() => (result ? { ...result } : DEMO_ROUTE), [result]);
+  const mapRoute = useMemo<ManagedRoute>(
+    () => (result ? { ...result } : demoPath ? { ...DEMO_ROUTE, pathCoordinates: demoPath } : DEMO_ROUTE),
+    [result, demoPath],
+  );
 
   const loadSavedRoutes = useCallback(async () => {
     try {
@@ -174,7 +198,6 @@ export default function RouteAIStudio({
       if (!response.ok) return;
       const routes = payload.routes ?? [];
       setSavedRoutes(toGhostRoutes(routes));
-      setSavedCount(payload.count ?? routes.length);
     } catch {
       // The map still works without logged routes; no user-facing error.
     }
@@ -320,10 +343,11 @@ export default function RouteAIStudio({
             htmlFor="raw-route-input"
             className="text-[11px] tracking-[0.2em] text-cyan-300/80 uppercase"
           >
-            Route input
+            Route description
           </label>
           <p className="mt-1 text-xs leading-relaxed text-slate-500">
-            Describe the ride the way you&apos;d tell a friend, or paste messy GPS coordinates.
+            Tell us where you&apos;re going and how you usually get there — we&apos;ll map the stops, fare
+            and street path.
           </p>
         </div>
 
@@ -333,7 +357,7 @@ export default function RouteAIStudio({
           className="flex flex-wrap items-center gap-1.5"
         >
           <span className="w-full text-[10px] tracking-[0.2em] text-cyan-300/70 uppercase">
-            Quick Demo Scenarios
+            Try a sample route
           </span>
           {DEMO_SCENARIOS.map((scenario) => (
             <button
@@ -342,6 +366,10 @@ export default function RouteAIStudio({
               title={scenario.prompt}
               disabled={isLoading}
               onClick={() => {
+                // Fill the box so the input matches what is being mapped, then
+                // normalize straight away.
+                setRawInput(scenario.prompt);
+                setFocusStop(null);
                 void runNormalization(scenario.prompt);
               }}
               className="rounded-full border border-cyan-500/25 bg-[#03070f] px-2.5 py-1 text-[10px] tracking-[0.04em] text-cyan-200/90 transition hover:border-cyan-400/50 hover:bg-cyan-400/10 disabled:cursor-wait disabled:opacity-50"
@@ -359,8 +387,8 @@ export default function RouteAIStudio({
           spellCheck={false}
           rows={7}
           disabled={isLoading}
-          placeholder={"take the shared auto from Yelahanka, get down at Hebbal, then continue to Majestic. 30 rupees, every 10 mins.\n\nor\n\n13.1007,77.5963\n13.0358,77.597\n12.9767,77.5713"}
-          className="w-full resize-y rounded-xl border border-cyan-500/20 bg-[#03070f] p-3 font-mono text-xs leading-relaxed text-slate-200 placeholder:text-slate-600 focus:border-cyan-400/60 focus:ring-2 focus:ring-cyan-400/20 focus:outline-none disabled:opacity-60"
+          placeholder="Shared auto from Yelahanka to Majestic via Hebbal, about 30 rupees, every 10 mins…"
+          className="w-full resize-y rounded-xl border border-cyan-500/20 bg-[#03070f] p-3 text-sm leading-relaxed text-slate-200 placeholder:text-slate-600 focus:border-cyan-400/60 focus:ring-2 focus:ring-cyan-400/20 focus:outline-none disabled:opacity-60"
         />
 
         <div className="flex flex-wrap items-center gap-2">
@@ -382,9 +410,7 @@ export default function RouteAIStudio({
           >
             Upload coordinates
           </button>
-          <span className="truncate text-[11px] text-slate-500">
-            {fileName ?? ".txt · .csv · .json · .geojson"}
-          </span>
+          <span className="truncate text-[11px] text-slate-500">{fileName ?? "or upload recorded GPS"}</span>
         </div>
 
         <button
@@ -399,7 +425,7 @@ export default function RouteAIStudio({
                 aria-hidden="true"
                 className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-cyan-200/30 border-t-cyan-200"
               />
-              <span className="animate-pulse">Normalizing with Gemini…</span>
+              <span className="animate-pulse">Mapping your route…</span>
             </>
           ) : (
             "Normalize Route with Gemini AI"
@@ -417,40 +443,36 @@ export default function RouteAIStudio({
 
         {result ? (
           <div className="mt-1 space-y-2 rounded-xl border border-cyan-500/15 bg-[#03070f]/80 p-3">
-            <p className="text-sm font-medium text-cyan-50">{result.routeName}</p>
-            <dl className="grid grid-cols-2 gap-2 text-[11px] text-slate-400">
-              <div>
-                <dt className="tracking-[0.15em] text-slate-500 uppercase">Vehicle</dt>
-                <dd className="text-slate-200">{result.vehicleType}</dd>
-              </div>
-              <div>
-                <dt className="tracking-[0.15em] text-slate-500 uppercase">Fare</dt>
-                <dd className="text-slate-200">{result.estimatedFare}</dd>
-              </div>
-              <div>
-                <dt className="tracking-[0.15em] text-slate-500 uppercase">Frequency</dt>
-                <dd className="text-slate-200">{result.frequency}</dd>
-              </div>
-              <div>
-                <dt className="tracking-[0.15em] text-slate-500 uppercase">Points</dt>
-                <dd className="text-slate-200">
-                  {rawPoints.length || "—"} raw → {result.stops.length} stops
-                </dd>
-              </div>
-            </dl>
-            <ul className="max-h-40 space-y-1 overflow-y-auto pr-1">
+            <p className="text-sm font-semibold text-cyan-50">{result.routeName}</p>
+            <div className="flex flex-wrap items-center gap-1.5">
+              <span className="rounded-full border border-cyan-400/40 bg-cyan-400/15 px-2 py-0.5 text-[10px] font-medium tracking-wide text-cyan-100">
+                {result.vehicleType}
+              </span>
+              <span className="rounded-full border border-[#7cf6a0]/35 bg-[#7cf6a0]/10 px-2 py-0.5 text-[10px] font-medium tracking-wide text-[#c8ffd9]">
+                {formatFare(result.estimatedFare)}
+              </span>
+              <span className="rounded-full border border-slate-500/30 bg-slate-500/10 px-2 py-0.5 text-[10px] tracking-wide text-slate-300">
+                {result.frequency}
+              </span>
+            </div>
+            <p className="pt-1 text-[10px] tracking-[0.18em] text-slate-500 uppercase">Stops</p>
+            <ol className="max-h-48 space-y-0.5 overflow-y-auto pr-1">
               {result.stops.map((stop, index) => (
-                <li key={`${stop.name}-${index}`} className="flex items-start gap-2 text-[11px] text-slate-300">
-                  <span className="mt-1 h-1 w-1 shrink-0 rounded-full bg-cyan-400 shadow-[0_0_6px_#00f3ff]" />
-                  <span>
-                    {stop.name}
-                    <span className="block text-[10px] text-slate-500">
-                      {stop.lat.toFixed(4)}, {stop.lng.toFixed(4)}
+                <li key={`${stop.name}-${index}`}>
+                  <button
+                    type="button"
+                    onClick={() => setFocusStop({ lat: stop.lat, lng: stop.lng, key: Date.now() })}
+                    title={`Show ${stop.name} on the map`}
+                    className="flex w-full items-center gap-2 rounded-lg px-2 py-1 text-left text-[11px] text-slate-300 transition hover:bg-cyan-400/10 hover:text-cyan-100"
+                  >
+                    <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full border border-cyan-400/40 text-[9px] text-cyan-300">
+                      {index + 1}
                     </span>
-                  </span>
+                    <span className="truncate">{stop.name}</span>
+                  </button>
                 </li>
               ))}
-            </ul>
+            </ol>
 
             <button
               type="button"
@@ -460,7 +482,7 @@ export default function RouteAIStudio({
               }}
               className="flex w-full items-center justify-center gap-2 rounded-lg border border-[#7cf6a0]/40 bg-[#7cf6a0]/10 px-3 py-2 text-[11px] font-medium text-[#b9ffd8] transition hover:bg-[#7cf6a0]/20 disabled:cursor-wait disabled:opacity-60"
             >
-              {saveState.status === "saving" ? "Saving…" : "Save route to Supabase"}
+              {saveState.status === "saving" ? "Saving…" : "Save this route"}
             </button>
 
             {saveState.message ? (
@@ -479,21 +501,16 @@ export default function RouteAIStudio({
 
       <div className="flex min-h-0 flex-col gap-2">
         <p className="text-[11px] text-slate-500">
-          Toggle LOGGED ROUTES, RAW GPS and CLEANED on the map · hover a line or pin for its card.
+          Pick a stop in the summary to jump to it on the map.
         </p>
 
         <div className="relative h-[58vh] min-h-[340px] overflow-hidden rounded-2xl border border-cyan-500/25 shadow-[0_0_40px_-12px_rgba(0,243,255,0.55)] lg:h-[calc(100dvh-13rem)]">
           <MapLayerManager
             route={mapRoute}
+            focusPoint={focusStop}
             rawCoordinates={rawPoints}
             savedRoutes={externalRoutes.length > 0 ? [...externalRoutes, ...savedRoutes] : savedRoutes}
           />
-
-          {savedCount > 0 ? (
-            <p className="pointer-events-none absolute bottom-3 left-1/2 z-[500] -translate-x-1/2 rounded-full border border-[#7cf6a0]/30 bg-[#050b14]/90 px-3 py-1 text-[10px] text-[#b9ffd8]">
-              {savedCount} logged route{savedCount === 1 ? "" : "s"} available in LOGGED ROUTES
-            </p>
-          ) : null}
 
           {isLoading ? (
             <div className="pointer-events-none absolute inset-0 z-[500] flex items-center justify-center bg-[#03070f]/45 backdrop-blur-[1px]">

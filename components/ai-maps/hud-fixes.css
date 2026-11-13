@@ -1,0 +1,24 @@
+/*
+ * Two surgical HUD fixes. Nothing here changes colours, spacing scale, fonts or
+ * positions — only the scrollbar on the vehicle-filter row and the horizontal
+ * padding of those pills so the whole row fits on one line.
+ */
+
+/* Vehicle filter row (ALL / AUTO / MINIBUS / BUS / JEEP / PICKUP EASE):
+   hide the horizontal scrollbar, including on WebKit. */
+div:has(> [aria-label="Filter routes by vehicle type"]) {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+div:has(> [aria-label="Filter routes by vehicle type"])::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+/* Slightly tighter horizontal padding so every pill fits without wrapping. */
+[aria-label="Filter routes by vehicle type"] > button {
+  padding-inline: 0.5rem;
+  letter-spacing: 0.08em;
+}

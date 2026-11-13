@@ -1,8 +1,11 @@
 'use client'
 
 import dynamic from 'next/dynamic'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import './leaflet-fixes.css'
+
+/** Any HUD button (e.g. "Share a route") can request the AI drawer. */
+export const OPEN_AI_ROUTE_EVENT = 'ghost-ai-open'
 
 /**
  * AI route mapper — hosts the AI + Maps module inside the product shell.
@@ -26,15 +29,28 @@ const GhostRouteMapper = dynamic(() => import('@/components/ai-maps/GhostRouteMa
 export function AiRoutePanel() {
   const [open, setOpen] = useState(false)
 
+  useEffect(() => {
+    const openFromHud = () => setOpen(true)
+    window.addEventListener(OPEN_AI_ROUTE_EVENT, openFromHud)
+    return () => window.removeEventListener(OPEN_AI_ROUTE_EVENT, openFromHud)
+  }, [])
+
   if (!open) {
     return (
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="pointer-events-auto inline-flex items-center gap-2 rounded-full border border-line bg-surface px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.18em] text-text shadow-sm transition-colors hover:bg-card focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-route-solid"
+        className="pointer-events-auto inline-flex items-center gap-2 rounded-full border border-line bg-surface px-3 py-1.5 leading-none text-text shadow-sm transition-colors hover:bg-card focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-route-solid"
       >
-        <span aria-hidden="true" className="size-1.5 rounded-full bg-route-solid" />
-        AI route
+        <span aria-hidden="true" className="size-1.5 shrink-0 rounded-full bg-route-solid" />
+        <span className="flex flex-col items-start gap-0.5">
+          <span className="font-mono text-[10px] leading-none uppercase tracking-[0.18em]">
+            AI route
+          </span>
+          <span className="font-mono text-[9px] leading-none normal-case text-muted-text">
+            0 active routes
+          </span>
+        </span>
       </button>
     )
   }

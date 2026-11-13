@@ -2,6 +2,7 @@ import { Analytics } from '@vercel/analytics/next'
 import type { Metadata, Viewport } from 'next'
 import { JetBrains_Mono, Space_Grotesk } from 'next/font/google'
 import { ThemeProvider } from '@/components/theme-provider'
+import '@/components/ai-maps/hud-fixes.css'
 import './globals.css'
 
 const spaceGrotesk = Space_Grotesk({

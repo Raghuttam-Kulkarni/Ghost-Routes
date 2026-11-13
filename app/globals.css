@@ -4,7 +4,50 @@
   color-scheme: dark;
 }
 
+html,
+body {
+  height: 100%;
+}
+
 body {
   background-color: #03070f;
   color: #e6f7ff;
+  overflow: hidden;
+}
+
+/*
+ * Tailwind's preflight sets `img { display: block; max-width: 100% }`. That rule
+ * also hits Leaflet's map tiles and div-icon markers, which are absolutely
+ * positioned at their own pixel size — a max-width there squashes tiles into
+ * stripes and shrinks markers, so the map opts out.
+ */
+.leaflet-container img,
+.leaflet-container svg {
+  max-width: none !important;
+  max-height: none !important;
+}
+
+.leaflet-container img.leaflet-tile {
+  display: block;
+  width: 256px;
+  height: 256px;
+  max-width: none !important;
+  max-height: none !important;
+}
+
+.leaflet-container {
+  height: 100%;
+  width: 100%;
+  background: #050b14;
+}
+
+/* The map is its own stacking context, so the floating HUD (z-[500]) always sits
+   above the panes without competing with the page header. */
+.mlm-container {
+  isolation: isolate;
+  z-index: 0;
+}
+
+.leaflet-container .leaflet-control-zoom a {
+  line-height: 26px;
 }

@@ -45,6 +45,21 @@ export function buildOsrmUrl(stops: SnapStop[]): string | null {
   return `${OSRM_ROUTE_BASE}/${waypoints.join(";")}?overview=full&geometries=geojson`;
 }
 
+/**
+ * The same stop list always snaps to the same streets, so successful geometry is
+ * memoised for the life of the page: re-renders, layer toggles and re-selecting a
+ * demo route never hit OSRM twice.
+ */
+const pathCache = new Map<string, LatLng[]>();
+
+function stopsKey(stops: SnapStop[]): string {
+  return stops
+    .filter(isUsableStop)
+    .slice(0, 100)
+    .map((stop) => `${stop.lat},${stop.lng}`)
+    .join(";");
+}
+
 /** GeoJSON coordinates are `[lng, lat]`; convert them to `[lat, lng]`. */
 function toLatLng(value: unknown): LatLng | null {
   if (!Array.isArray(value) || value.length < 2) return null;
@@ -76,15 +91,19 @@ export function extractPath(payload: unknown): LatLng[] {
 /**
  * Snaps the given stops to real roads and returns the route geometry as
  * `[lat, lng]` pairs. Resolves to `null` on any problem — no stops, network
- * error, non-200 response, bad JSON, empty geometry, or a >3s timeout — so the
+ * error, non-200 response, bad JSON, empty geometry, or a >7s timeout — so the
  * caller can fall back to the model's coordinates without a visible failure.
  */
-export async function snapStopsToRoads(
+export async function snapToRoads(
   stops: SnapStop[],
   timeoutMs: number = OSRM_TIMEOUT_MS,
 ): Promise<LatLng[] | null> {
   const url = buildOsrmUrl(stops);
   if (!url) return null;
+
+  const key = stopsKey(stops);
+  const cached = pathCache.get(key);
+  if (cached) return cached;
 
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), timeoutMs);
@@ -98,7 +117,9 @@ export async function snapStopsToRoads(
     if (!response.ok) return null;
 
     const path = extractPath(await response.json());
-    return path.length >= 2 ? path : null;
+    if (path.length < 2) return null;
+    pathCache.set(key, path);
+    return path;
   } catch {
     // Abort (timeout), DNS, TLS, rate limiting — all indistinguishable to the
     // caller, which keeps Gemini's path in every case.
@@ -107,3 +128,6 @@ export async function snapStopsToRoads(
     clearTimeout(timeout);
   }
 }
+
+/** Previous name of {@link snapToRoads}; kept so older imports keep working. */
+export const snapStopsToRoads = snapToRoads;

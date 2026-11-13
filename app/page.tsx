@@ -21,8 +21,8 @@ const RouteAIStudio = dynamic(() => import("@/components/RouteAIStudio"), {
 
 export default function Home() {
   return (
-    <main className="mx-auto flex min-h-dvh w-full max-w-7xl flex-col gap-5 p-4 sm:p-6 lg:p-8">
-      <header className="flex flex-col gap-2">
+    <main className="mx-auto flex h-dvh max-h-dvh w-full max-w-7xl flex-col gap-4 overflow-hidden p-4 sm:gap-5 sm:p-6 lg:p-8">
+      <header className="flex shrink-0 flex-col gap-2">
         <p className="text-[11px] tracking-[0.35em] text-cyan-400/70 uppercase">Ghost Routes</p>
         <h1 className="text-2xl font-semibold text-cyan-50 sm:text-3xl">Discover &amp; Map Local Routes</h1>
         <p className="max-w-2xl text-sm text-slate-400">
